@@ -1,0 +1,6 @@
+obj-m := kexec_mod.o
+kexec_mod-y := kexec_drv.o kexec_compat.o 
+kexec_mod-y += machine_kexec.o kexec.o orig/relocate_kernel.o
+kexec_mod-y += idmap.o cpu-reset.o
+
+ccflags-y := -I$(src)/ -fno-unwind-tables -fno-asynchronous-unwind-tables -g
