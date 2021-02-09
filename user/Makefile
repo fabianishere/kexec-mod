@@ -7,9 +7,6 @@ CFLAGS ?= -O2 -Wall
 
 all: redir.so
 
-clean:
-	rm redir.so
-
 %.so: %.c
 	$(CROSS_COMPILE)$(CC) $(CFLAGS) -shared -fpic -o $@ $<
 
