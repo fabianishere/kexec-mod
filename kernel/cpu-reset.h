@@ -28,8 +28,7 @@ static void __noreturn cpu_soft_restart(unsigned long el2_switch,
 	typeof(__cpu_soft_restart) *restart;
 
 	el2_switch = el2_switch && !is_kernel_in_hyp_mode() &&
-		/* Uses __boot_cpu_mode which is not exported */
-		/* is_hyp_mode_available() */ false;
+		is_hyp_mode_available();
 	
 	restart = (void *)kexec_pa_symbol(__cpu_soft_restart);
 

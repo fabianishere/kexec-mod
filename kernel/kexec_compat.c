@@ -1,3 +1,5 @@
+#define pr_fmt(fmt) "kexec_mod: " fmt
+
 #include <asm/uaccess.h>
 #include <linux/mm_types.h>
 #include <linux/kexec.h>
@@ -58,6 +60,35 @@ void migrate_to_reboot_cpu(void)
 	migrate_to_reboot_cpu_ptr();
 }
 
+
+int __boot_cpu_mode[2];
+
+static void __init_cpu_boot_mode(void)
+{
+	/*
+	 * Hack to obtain pointer to __boot_mode_cpu
+	 * Our approach is to decode the address to __boot_mode_cpu from the instructions
+	 * of set_cpu_boot_mode_flag which is exported and references __boot_mode_cpu.
+	 */
+	u32 *set_cpu_boot_mode_flag_ptr = (void *)kallsyms_lookup_name("set_cpu_boot_mode_flag");
+	void *page = (void *) (((unsigned long)set_cpu_boot_mode_flag_ptr) & ~0xFFF);
+	u16 lo = (set_cpu_boot_mode_flag_ptr[0] >> 29) & 0x3;
+	u16 hi = (set_cpu_boot_mode_flag_ptr[0] >> 4) & 0xFFFF;
+	int *__boot_cpu_mode_ptr = page + ((hi << 13) | (lo << 12));
+
+	if (virt_addr_valid(__boot_cpu_mode_ptr)) {
+		__boot_cpu_mode[0] = __boot_cpu_mode_ptr[0];
+		__boot_cpu_mode[1] = __boot_cpu_mode_ptr[1];
+
+		pr_info("Boot cpu mode: 0x%x 0x%x\n", __boot_cpu_mode[0], __boot_cpu_mode[1]);
+	} else {
+		pr_warn("Failed to detect boot cpu mode\n");
+
+		__boot_cpu_mode[0] = 0;
+		__boot_cpu_mode[1] = 0;
+	}
+}
+
 static void *ksym(const char *name)
 {
 	return (void *) kallsyms_lookup_name(name);
@@ -74,5 +105,6 @@ int kexec_compat_load(void)
 	    || !(migrate_to_reboot_cpu_ptr = ksym("migrate_to_reboot_cpu"))
 	    || !(kernel_restart_prepare_ptr = ksym("kernel_restart_prepare")))
 		return -ENOENT;
+	__init_cpu_boot_mode();
 	return 0;
 }

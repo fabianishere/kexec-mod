@@ -42,17 +42,27 @@ extern void __cpu_soft_restart(unsigned el2_switch,
 	unsigned long entry, unsigned long arg0, unsigned long arg1,
 	unsigned long arg2);
 
-void kexec_idmap_setup(void)
+static void __init_mm(void)
 {
-    int i;
-	unsigned long pa, pdx;
-	void *ptrs[3] = {kexec_idmap_pg_dir, kexec_idmap_pt, __cpu_soft_restart};
-
-	/* Hack to obtain pointer to swapper_pg_dir (since it is not exported) */
+	/*
+	 * Hack to obtain pointer to swapper_pg_dir (since it is not exported).
+	 * However, we can find its physical address in the TTBR1_EL1 register
+	 * and convert it to a logical address.
+	 */
 	u32 val;
 	asm volatile("mrs %0, ttbr1_el1" : "=r" (val));
 	init_mm.context.id = 0;
 	init_mm.pgd = phys_to_virt(val);
+
+}
+
+void kexec_idmap_setup(void)
+{
+	int i;
+	unsigned long pa, pdx;
+	void *ptrs[3] = {kexec_idmap_pg_dir, kexec_idmap_pt, __cpu_soft_restart};
+
+	__init_mm();
 
 	/* Clear the idmap page table */
 	memset(kexec_idmap_pg_dir, 0, sizeof(kexec_idmap_pg_dir));
@@ -122,5 +132,3 @@ phys_addr_t kexec_pa_symbol(void *ptr)
 	page_offset = va & ~PAGE_MASK;
 	return page_to_phys(page) | page_offset;
 }
-
-
