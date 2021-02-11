@@ -1,9 +1,10 @@
 #define pr_fmt(fmt) "kexec_mod: " fmt
 
-#include <asm/uaccess.h>
 #include <linux/mm_types.h>
 #include <linux/kexec.h>
 #include <linux/kallsyms.h>
+#include <asm/uaccess.h>
+#include <asm/virt.h>
 
 #include "kexec_compat.h"
 
@@ -61,9 +62,9 @@ void migrate_to_reboot_cpu(void)
 }
 
 
-int __boot_cpu_mode[2];
+u32 __boot_cpu_mode[2];
 
-static void __init_cpu_boot_mode(void)
+static int __init_cpu_boot_mode(void)
 {
 	/*
 	 * Hack to obtain pointer to __boot_mode_cpu
@@ -80,13 +81,11 @@ static void __init_cpu_boot_mode(void)
 		__boot_cpu_mode[0] = __boot_cpu_mode_ptr[0];
 		__boot_cpu_mode[1] = __boot_cpu_mode_ptr[1];
 
-		pr_info("Boot cpu mode: 0x%x 0x%x\n", __boot_cpu_mode[0], __boot_cpu_mode[1]);
-	} else {
-		pr_warn("Failed to detect boot cpu mode\n");
-
-		__boot_cpu_mode[0] = 0;
-		__boot_cpu_mode[1] = 0;
+		pr_info("Detected boot CPU mode: 0x%x 0x%x\n", __boot_cpu_mode[0], __boot_cpu_mode[1]);
+		return 0;
 	}
+
+	return -1;
 }
 
 static void *ksym(const char *name)
@@ -94,7 +93,7 @@ static void *ksym(const char *name)
 	return (void *) kallsyms_lookup_name(name);
 }
 
-int kexec_compat_load(void)
+int kexec_compat_load(int el2_boot)
 {
 	if (!(machine_shutdown_ptr = ksym("machine_shutdown"))
 #ifdef CONFIG_ARM64
@@ -105,6 +104,16 @@ int kexec_compat_load(void)
 	    || !(migrate_to_reboot_cpu_ptr = ksym("migrate_to_reboot_cpu"))
 	    || !(kernel_restart_prepare_ptr = ksym("kernel_restart_prepare")))
 		return -ENOENT;
-	__init_cpu_boot_mode();
+
+	/* Find boot CPU mode */
+	__boot_cpu_mode[0] = BOOT_CPU_MODE_EL1;
+	__boot_cpu_mode[1] = BOOT_CPU_MODE_EL1;
+
+	if (!el2_boot) {
+		pr_info("EL2 kexec not supported\n");
+	} else if (__init_cpu_boot_mode() < 0) {
+		pr_warn("Failed to detect boot CPU mode\n");
+	}
+
 	return 0;
 }
