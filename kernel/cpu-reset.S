@@ -39,12 +39,18 @@ ENTRY(__cpu_soft_restart)
 	msr	sctlr_el1, x12
 	isb
 
+	/*
+	 * Preserve kernel entry point to fallback to EL1 boot
+	 * in case the hypervisor call returns/fails, for instance,
+	 * when HVC_SOFT_RESTART is not supported by the kernel.
+	 */
+	mov	x18, x1				// entry
+
 	cbz	x0, 1f				// el2_switch?
 	mov	x0, #HVC_SOFT_RESTART
 	hvc	#0				// no return
 
-1:	mov	x18, x1				// entry
-	mov	x0, x2				// arg0
+1:	mov	x0, x2				// arg0
 	mov	x1, x3				// arg1
 	mov	x2, x4				// arg2
 	br	x18
