@@ -67,6 +67,9 @@ void __hyp_set_vectors(phys_addr_t phys_vector_base)
 	__hyp_set_vectors_ptr(phys_vector_base);
 }
 
+void __hyp_set_vectors_nop(phys_addr_t phys_vector_base)
+{}
+
 static void *ksym(const char *name)
 {
 	return (void *) kallsyms_lookup_name(name);
@@ -103,14 +106,13 @@ static int __init_cpu_boot_mode(void)
 	return -1;
 }
 
-int kexec_compat_load(int el2_boot)
+int kexec_compat_load(int detect_el2, int shim_hyp)
 {
 	if (!(machine_shutdown_ptr = ksym("machine_shutdown"))
 #ifdef CONFIG_ARM64
 	    || !(cpu_hotplug_enable_ptr = ksym("cpu_hotplug_enable"))
 	    || !(cpu_do_switch_mm_ptr = ksym("cpu_do_switch_mm"))
 	    || !(__flush_dcache_area_ptr = ksym("__flush_dcache_area"))
-	    || !(__hyp_set_vectors_ptr = ksym("__hyp_set_vectors"))
 #endif
 	    || !(migrate_to_reboot_cpu_ptr = ksym("migrate_to_reboot_cpu"))
 	    || !(kernel_restart_prepare_ptr = ksym("kernel_restart_prepare")))
@@ -120,11 +122,23 @@ int kexec_compat_load(int el2_boot)
 	__boot_cpu_mode[0] = BOOT_CPU_MODE_EL1;
 	__boot_cpu_mode[1] = BOOT_CPU_MODE_EL1;
 
-	if (!el2_boot) {
-		pr_info("EL2 kexec not supported\n");
+	if (!detect_el2) {
+		pr_info("EL2 kexec not supported.\n");
 	} else if (__init_cpu_boot_mode() < 0) {
-		pr_warn("Failed to detect boot CPU mode\n");
+		pr_warn("Failed to detect boot CPU mode.\n");
 	}
 
+	/* Enable shimming the hypervisor vectors */
+	__hyp_set_vectors_ptr = __hyp_set_vectors_nop;
+	if (shim_hyp) {
+		pr_info("Enabling shim for hypervisor vectors.\n");
+
+		if (detect_el2 && !(__hyp_set_vectors_ptr = ksym("__hyp_set_vectors"))) {
+			pr_err("Not able to shim hypervisor vectors.");
+			__hyp_set_vectors_ptr = __hyp_set_vectors_nop;
+		} else if (!detect_el2) {
+			pr_warn("Hypervisor shim unnecessary without EL2 detection.\n");
+		}
+	}
 	return 0;
 }

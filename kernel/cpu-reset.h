@@ -34,7 +34,11 @@ static void __noreturn cpu_soft_restart(unsigned long el2_switch,
 	
 	restart = (void *)kexec_pa_symbol(__cpu_soft_restart);
 
-	/* Shim the hypervisor vectors for HYP_SOFT_RESTART support */
+	/* 
+	 * Shim the hypervisor vectors for HYP_SOFT_RESTART support 
+	 * Note that __hyp_set_vectors will be a no-op if the shim
+	 * is disabled. 
+	 */
 	__hyp_set_vectors(kexec_pa_symbol(__hyp_shim_vectors));
 
 	/* Install identity mapping */

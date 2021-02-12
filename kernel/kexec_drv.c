@@ -19,10 +19,16 @@ MODULE_AUTHOR("Fabian Mastenbroek <mail.fabianm@gmail.com>");
 MODULE_DESCRIPTION("Kexec backport as Kernel Module");
 MODULE_VERSION("1.0");
 
-static int disable_el2_boot;
-module_param(disable_el2_boot, int, 0);
-MODULE_PARM_DESC(disable_el2_boot,
-		 "Do not use the hypervisor (EL2) to perform soft restart");
+static int detect_el2 = 1;
+module_param(detect_el2, int, 0);
+MODULE_PARM_DESC(detect_el2,
+		 "Attempt to detect EL2 mode (default = 1)");
+
+static int shim_hyp = 0;
+module_param(shim_hyp, int, 0);
+MODULE_PARM_DESC(shim_hyp,
+		 "Shim the HYP_SOFT_RESTART call for EL2 mode (default = 0)");
+
 
 static ssize_t kexecmod_loaded_show(struct kobject *kobj,
 		  		    struct kobj_attribute *attr, char *buf)
@@ -70,7 +76,7 @@ kexecmod_init(void)
 	pr_info("Installing Kexec functionalitiy.\n");
 
 	/* Load compatibility layer */	
-	if ((err = kexec_compat_load(!disable_el2_boot)) != 0) {
+	if ((err = kexec_compat_load(detect_el2, shim_hyp)) != 0) {
 		pr_err("Failed to load: %d\n", err);
 		return err;
 	}
