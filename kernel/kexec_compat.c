@@ -14,6 +14,7 @@ static int  (*memblock_is_region_memory_ptr)(phys_addr_t, phys_addr_t);
 static void (*cpu_hotplug_enable_ptr)(void);
 static void (*cpu_do_switch_mm_ptr)(unsigned long, struct mm_struct *);
 static void (*__flush_dcache_area_ptr)(void *, size_t);
+static void (*__hyp_set_vectors_ptr)(phys_addr_t);
 static void (*migrate_to_reboot_cpu_ptr)(void);
 
 void machine_shutdown(void)
@@ -61,9 +62,23 @@ void migrate_to_reboot_cpu(void)
 	migrate_to_reboot_cpu_ptr();
 }
 
+void __hyp_set_vectors(phys_addr_t phys_vector_base)
+{
+	__hyp_set_vectors_ptr(phys_vector_base);
+}
+
+static void *ksym(const char *name)
+{
+	return (void *) kallsyms_lookup_name(name);
+}
+
 
 u32 __boot_cpu_mode[2];
 
+/**
+ * This function initializes the __boot_cpu_mode variable with that from the kernel.
+ * Since it is not exported, this requires some hacks.
+ */
 static int __init_cpu_boot_mode(void)
 {
 	/*
@@ -88,11 +103,6 @@ static int __init_cpu_boot_mode(void)
 	return -1;
 }
 
-static void *ksym(const char *name)
-{
-	return (void *) kallsyms_lookup_name(name);
-}
-
 int kexec_compat_load(int el2_boot)
 {
 	if (!(machine_shutdown_ptr = ksym("machine_shutdown"))
@@ -100,6 +110,7 @@ int kexec_compat_load(int el2_boot)
 	    || !(cpu_hotplug_enable_ptr = ksym("cpu_hotplug_enable"))
 	    || !(cpu_do_switch_mm_ptr = ksym("cpu_do_switch_mm"))
 	    || !(__flush_dcache_area_ptr = ksym("__flush_dcache_area"))
+	    || !(__hyp_set_vectors_ptr = ksym("__hyp_set_vectors"))
 #endif
 	    || !(migrate_to_reboot_cpu_ptr = ksym("migrate_to_reboot_cpu"))
 	    || !(kernel_restart_prepare_ptr = ksym("kernel_restart_prepare")))
