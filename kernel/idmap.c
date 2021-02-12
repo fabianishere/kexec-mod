@@ -34,7 +34,7 @@
 #endif
 
 pgd_t kexec_idmap_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (4096)));
-pte_t kexec_idmap_pt[PTRS_PER_PTE] __attribute__ ((aligned (4096)));
+pte_t kexec_idmap_pt[2 * PTRS_PER_PTE] __attribute__ ((aligned (4096)));
 
 struct mm_struct init_mm;
 
@@ -60,7 +60,11 @@ void kexec_idmap_setup(void)
 {
 	int i;
 	unsigned long pa, pdx;
-	void *ptrs[3] = {kexec_idmap_pg_dir, kexec_idmap_pt, __cpu_soft_restart};
+	pte_t *pmd, *next_pmd = kexec_idmap_pt;
+	void *ptrs[4] = {kexec_idmap_pg_dir,
+			 kexec_idmap_pt,
+			 kexec_idmap_pt + PTRS_PER_PTE,
+			 __cpu_soft_restart};
 
 	__init_mm();
 
@@ -68,18 +72,21 @@ void kexec_idmap_setup(void)
 	memset(kexec_idmap_pg_dir, 0, sizeof(kexec_idmap_pg_dir));
 	memset(kexec_idmap_pt, 0, sizeof(kexec_idmap_pt));
 
-	/* Identity map necessary pages using 2MB blocks */
-	pa = kexec_pa_symbol(kexec_idmap_pt);
-	pdx = pgd_index(pa);
-
-	/* Point page directory to page table */
-	kexec_idmap_pg_dir[pgd_index(pa)] = pa | PMD_TYPE_TABLE;
-
 	for (i = 0; i < sizeof(ptrs) / sizeof(ptrs[0]); i++) {
 		pa = kexec_pa_symbol(ptrs[i]);
-		/* We require that all pages belong to the same page directory */
-		BUG_ON(pdx != pgd_index(pa));
-		kexec_idmap_pt[block_index(pa)] = block_align(pa) | MM_MMUFLAGS;
+		pdx = pgd_index(pa);
+
+		if (kexec_idmap_pg_dir[pdx]) {
+			pmd = (void *) phys_to_virt(kexec_idmap_pg_dir[pdx] & ~0xFFF);
+		} else {
+			pr_info("kexec_mod: Created new idmap page table for 0x%lx\n", pa);
+
+			pmd = next_pmd;
+			next_pmd += PTRS_PER_PTE;
+			kexec_idmap_pg_dir[pdx] = kexec_pa_symbol(pmd) | PMD_TYPE_TABLE;
+		}
+
+		pmd[block_index(pa)] = block_align(pa) | MM_MMUFLAGS;
 	}
 }
 
