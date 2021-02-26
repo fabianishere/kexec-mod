@@ -75,7 +75,7 @@ static void *ksym(const char *name)
 	return (void *) kallsyms_lookup_name(name);
 }
 
-
+u64 idmap_t0sz = TCR_T0SZ(VA_BITS);
 u32 __boot_cpu_mode[2];
 
 /**

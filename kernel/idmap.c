@@ -94,6 +94,7 @@ void kexec_idmap_install(void)
 {
 	cpu_set_reserved_ttbr0();
 	flush_tlb_all();
+	cpu_set_idmap_tcr_t0sz();
 
 	cpu_do_switch_mm(kexec_pa_symbol(kexec_idmap_pg_dir), &init_mm);
 }
