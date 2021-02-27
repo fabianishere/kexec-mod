@@ -72,10 +72,10 @@ static int __init
 kexecmod_init(void)
 {
 	int err;
-	
+
 	pr_info("Installing Kexec functionalitiy.\n");
 
-	/* Load compatibility layer */	
+	/* Load compatibility layer */
 	if ((err = kexec_compat_load(detect_el2, shim_hyp)) != 0) {
 		pr_err("Failed to load: %d\n", err);
 		return err;
@@ -108,6 +108,10 @@ static void __exit
 kexecmod_exit(void)
 {
 	pr_info("Stopping...\n");
+
+	/* Unload compatibility layer */
+	kexec_compat_unload();
+
 	/* Destroy character device */
 	device_destroy(kexec_class, kexec_dev);
 	class_destroy(kexec_class);
@@ -117,4 +121,4 @@ kexecmod_exit(void)
 	sysfs_remove_file(kernel_kobj, &(kexec_loaded_attr.attr));
 }
 
-module_exit(kexecmod_exit);	
+module_exit(kexecmod_exit);

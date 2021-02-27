@@ -95,3 +95,10 @@ ENDPROC(\label)
 	invalid_vector	el1_irq_invalid
 	invalid_vector	el1_fiq_invalid
 	invalid_vector	el1_error_invalid
+
+/**
+ * __hyp_shim_size - Number of bytes to copy to the hyp shim page.
+ */
+.globl __hyp_shim_size
+__hyp_shim_size:
+	.quad	__hyp_shim_size - __hyp_shim_vectors

@@ -3,6 +3,7 @@
 #include <linux/mm_types.h>
 #include <linux/kexec.h>
 #include <linux/kallsyms.h>
+#include <linux/slab.h>
 #include <asm/uaccess.h>
 #include <asm/virt.h>
 
@@ -99,11 +100,42 @@ static int __init_cpu_boot_mode(void)
 		__boot_cpu_mode[0] = __boot_cpu_mode_ptr[0];
 		__boot_cpu_mode[1] = __boot_cpu_mode_ptr[1];
 
-		pr_info("Detected boot CPU mode: 0x%x 0x%x\n", __boot_cpu_mode[0], __boot_cpu_mode[1]);
+		pr_info("Detected boot CPU mode: 0x%x 0x%x.\n", __boot_cpu_mode[0], __boot_cpu_mode[1]);
 		return 0;
 	}
 
 	return -1;
+}
+
+static void *__hyp_shim;
+
+/**
+ * This function allocates a page which will contain the hypervisor shim.
+ *
+ * Previously, we set vbar_el2 to point directly to __hyp_shim_vectors.
+ * However, we found that sometimes, the shim vectors would span two
+ * non-consecutive physical pages, which would cause it to jump into unknown
+ * memory.
+ *
+ * Our solution is to allocate a single page on which we place the hypervisor
+ * shim in order to ensure that relative jumps without the MMU still work
+ * properly.
+ */
+static int __init_hyp_shim(void)
+{
+	extern const unsigned long __hyp_shim_size;
+	extern void __hyp_shim_vectors(void);
+
+	__hyp_shim = alloc_pages_exact(__hyp_shim_size, GFP_KERNEL);
+
+	if (!__hyp_shim) {
+		return -ENOMEM;
+	}
+
+	memcpy(__hyp_shim, __hyp_shim_vectors, __hyp_shim_size);
+
+	pr_info("Hypervisor shim created at 0x%llx [%lu bytes].\n", virt_to_phys(__hyp_shim), __hyp_shim_size);
+	return 0;
 }
 
 int kexec_compat_load(int detect_el2, int shim_hyp)
@@ -133,12 +165,27 @@ int kexec_compat_load(int detect_el2, int shim_hyp)
 	if (shim_hyp) {
 		pr_info("Enabling shim for hypervisor vectors.\n");
 
-		if (detect_el2 && !(__hyp_set_vectors_ptr = ksym("__hyp_set_vectors"))) {
-			pr_err("Not able to shim hypervisor vectors.");
+		if (__init_hyp_shim() < 0) {
+			pr_err("Failed to initialize hypervisor shim.\n");
+		} else if (detect_el2 && !(__hyp_set_vectors_ptr = ksym("__hyp_set_vectors"))) {
+			pr_err("Not able to shim hypervisor vectors.\n");
 			__hyp_set_vectors_ptr = __hyp_set_vectors_nop;
 		} else if (!detect_el2) {
 			pr_warn("Hypervisor shim unnecessary without EL2 detection.\n");
 		}
 	}
 	return 0;
+}
+
+void kexec_compat_unload(void)
+{
+	extern const unsigned long __hyp_shim_size;
+
+	free_pages_exact(__hyp_shim, __hyp_shim_size);
+	__hyp_shim = NULL;
+}
+
+void kexec_compat_shim(void)
+{
+	__hyp_set_vectors(virt_to_phys(__hyp_shim));
 }

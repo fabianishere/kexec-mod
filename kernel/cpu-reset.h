@@ -16,6 +16,7 @@
 #include <asm/virt.h>
 
 #include "idmap.h"
+#include "kexec_compat.h"
 
 extern void __hyp_shim_vectors(void);
 
@@ -31,15 +32,11 @@ static void __noreturn cpu_soft_restart(unsigned long el2_switch,
 
 	el2_switch = el2_switch && !is_kernel_in_hyp_mode() &&
 		is_hyp_mode_available();
-	
+
 	restart = (void *)kexec_pa_symbol(__cpu_soft_restart);
 
-	/* 
-	 * Shim the hypervisor vectors for HYP_SOFT_RESTART support 
-	 * Note that __hyp_set_vectors will be a no-op if the shim
-	 * is disabled. 
-	 */
-	__hyp_set_vectors(kexec_pa_symbol(__hyp_shim_vectors));
+	/* Shim the hypervisor vectors for HYP_SOFT_RESTART support if enabled */
+	kexec_compat_shim();
 
 	/* Install identity mapping */
 	kexec_idmap_install();
