@@ -4,17 +4,17 @@
 #include "idmap.h"
 
 #ifdef CONFIG_ARM64_64K_PAGES
-#define BLOCK_SHIFT	PAGE_SHIFT
-#define BLOCK_SIZE	PAGE_SIZE
-#define TABLE_SHIFT	PMD_SHIFT
+#define IDMAP_BLOCK_SHIFT	PAGE_SHIFT
+#define IDMAP_BLOCK_SIZE	PAGE_SIZE
+#define IDMAP_TABLE_SHIFT	PMD_SHIFT
 #else
-#define BLOCK_SHIFT	SECTION_SHIFT
-#define BLOCK_SIZE	SECTION_SIZE
-#define TABLE_SHIFT	PUD_SHIFT
+#define IDMAP_BLOCK_SHIFT	SECTION_SHIFT
+#define IDMAP_BLOCK_SIZE	SECTION_SIZE
+#define IDMAP_TABLE_SHIFT	PUD_SHIFT
 #endif
 
-#define block_index(addr) (((addr) >> BLOCK_SHIFT) & (PTRS_PER_PTE - 1))
-#define block_align(addr) (((addr) >> BLOCK_SHIFT) << BLOCK_SHIFT)
+#define block_index(addr) (((addr) >> IDMAP_BLOCK_SHIFT) & (PTRS_PER_PTE - 1))
+#define block_align(addr) (((addr) >> IDMAP_BLOCK_SHIFT) << IDMAP_BLOCK_SHIFT)
 
 /*
  * Initial memory map attributes.
@@ -51,7 +51,6 @@ static void __init_mm(void)
 	 */
 	u32 val;
 	asm volatile("mrs %0, ttbr1_el1" : "=r" (val));
-	init_mm.context.id = 0;
 	init_mm.pgd = phys_to_virt(val);
 
 }
@@ -76,17 +75,17 @@ void kexec_idmap_setup(void)
 		pa = kexec_pa_symbol(ptrs[i]);
 		pdx = pgd_index(pa);
 
-		if (kexec_idmap_pg_dir[pdx]) {
-			pmd = (void *) phys_to_virt(kexec_idmap_pg_dir[pdx] & ~0xFFF);
+		if (pgd_val(kexec_idmap_pg_dir[pdx])) {
+			pmd = (void *) phys_to_virt(pgd_val(kexec_idmap_pg_dir[pdx]) & ~0xFFF);
 		} else {
 			pr_info("kexec_mod: Created new idmap page table for 0x%lx\n", pa);
 
 			pmd = next_pmd;
 			next_pmd += PTRS_PER_PTE;
-			kexec_idmap_pg_dir[pdx] = kexec_pa_symbol(pmd) | PMD_TYPE_TABLE;
+			kexec_idmap_pg_dir[pdx] = __pgd(kexec_pa_symbol(pmd) | PMD_TYPE_TABLE);
 		}
 
-		pmd[block_index(pa)] = block_align(pa) | MM_MMUFLAGS;
+		pmd[block_index(pa)] = __pte(block_align(pa) | MM_MMUFLAGS);
 	}
 }
 

@@ -1,4 +1,3 @@
-
 #include "kexec.h"
 
 #include <linux/module.h>
@@ -6,6 +5,19 @@
 #define module_init(initfn) __attribute__((unused)) static int initfn(void);
 
 #include "orig/kexec.c"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,3,0)
+#include "orig/kexec_core.c"
+#endif
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,19,0)
+long sys_kexec_load(unsigned long entry, unsigned long nr_segments,
+				struct kexec_segment __user *segments,
+				unsigned long flags)
+{
+	return __do_sys_kexec_load(entry, nr_segments, segments, flags);
+}
+#endif
 
 int panic_on_oops;
 

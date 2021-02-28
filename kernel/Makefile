@@ -21,3 +21,5 @@ orig:
 	ln -s $(KERNEL)/arch/$(ARCH)/kernel/relocate_kernel.S $@/
 	ln -s $(KERNEL)/arch/$(ARCH)/kernel/machine_kexec.c $@/
 	ln -s $(KERNEL)/kernel/kexec.c $@/
+	ln -s $(KERNEL)/kernel/kexec_core.c $@/
+	ln -s $(KERNEL)/kernel/kexec_internal.h $@/

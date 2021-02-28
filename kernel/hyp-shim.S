@@ -18,6 +18,7 @@
  */
 
 #include <linux/init.h>
+#include <linux/version.h>
 #include <linux/linkage.h>
 #include <linux/irqchip/arm-gic-v3.h>
 
@@ -76,7 +77,11 @@ el1_sync_shim:
 	br	x4				// no return
 
 	/* Someone called kvm_call_hyp() against the hyp-stub... */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4,12,0)
 3:	mov	x0, #ARM_EXCEPTION_HYP_GONE
+#else
+3:	ldr	x0, =HVC_STUB_ERR
+#endif
 
 9:	eret
 ENDPROC(el1_sync_shim)

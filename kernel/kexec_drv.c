@@ -2,12 +2,12 @@
 #define pr_fmt(fmt) MODULE_NAME ": " fmt
 
 #include <linux/module.h>
-#include <linux/syscalls.h>
 #include <linux/err.h>
 #include <linux/fs.h>
+#include <linux/sysfs.h>
 #include <linux/device.h>
 #include <linux/reboot.h>
-#include <linux/sysfs.h>
+
 #include <uapi/linux/stat.h>
 
 #include "kexec_compat.h"
@@ -28,7 +28,6 @@ static int shim_hyp = 0;
 module_param(shim_hyp, int, 0);
 MODULE_PARM_DESC(shim_hyp,
 		 "Shim the HYP_SOFT_RESTART call for EL2 mode (default = 0)");
-
 
 static ssize_t kexecmod_loaded_show(struct kobject *kobj,
 		  		    struct kobj_attribute *attr, char *buf)
