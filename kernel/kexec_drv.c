@@ -12,22 +12,11 @@
 
 #include "kexec_compat.h"
 #include "kexec.h"
-#include "idmap.h"
 
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Fabian Mastenbroek <mail.fabianm@gmail.com>");
 MODULE_DESCRIPTION("Kexec backport as Kernel Module");
 MODULE_VERSION("1.0");
-
-static int detect_el2 = 1;
-module_param(detect_el2, int, 0);
-MODULE_PARM_DESC(detect_el2,
-		 "Attempt to detect EL2 mode (default = 1)");
-
-static int shim_hyp = 0;
-module_param(shim_hyp, int, 0);
-MODULE_PARM_DESC(shim_hyp,
-		 "Shim the HYP_SOFT_RESTART call for EL2 mode (default = 0)");
 
 static ssize_t kexecmod_loaded_show(struct kobject *kobj,
 		  		    struct kobj_attribute *attr, char *buf)
@@ -72,16 +61,11 @@ kexecmod_init(void)
 {
 	int err;
 
-	pr_info("Installing Kexec functionalitiy.\n");
-
 	/* Load compatibility layer */
-	if ((err = kexec_compat_load(detect_el2, shim_hyp)) != 0) {
+	if ((err = kexec_compat_load()) != 0) {
 		pr_err("Failed to load: %d\n", err);
 		return err;
 	}
-
-	/* Build identity map for MMU */
-	kexec_idmap_setup();
 
 	/* Register character device at /dev/kexec */
 	kexec_maj = register_chrdev(0, "kexec", &fops);
@@ -97,6 +81,8 @@ kexecmod_init(void)
 
 	/* Register sysfs object */
 	err = sysfs_create_file(kernel_kobj, &(kexec_loaded_attr.attr));
+
+	pr_info("Kexec functionality now available at /dev/kexec.\n");
 
 	return 0;
 }

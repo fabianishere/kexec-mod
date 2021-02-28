@@ -18,9 +18,7 @@
 #include <asm/virt.h>
 
 #include "idmap.h"
-#include "kexec_compat.h"
-
-extern void __hyp_shim_vectors(void);
+#include "machine_kexec_compat.h"
 
 void __cpu_soft_restart(unsigned el2_switch,
 	unsigned long entry, unsigned long arg0, unsigned long arg1,
@@ -48,7 +46,7 @@ static void __noreturn cpu_soft_restart(unsigned long entry,
 	restart = (void *)kexec_pa_symbol(__cpu_soft_restart);
 
 	/* Shim the hypervisor vectors for HYP_SOFT_RESTART support if enabled */
-	kexec_compat_shim();
+	machine_kexec_compat_prereset();
 
 	/* Install identity mapping */
 	kexec_idmap_install();

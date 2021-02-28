@@ -1,3 +1,6 @@
+#define MODULE_NAME "kexec_mod_arm64"
+#define pr_fmt(fmt) MODULE_NAME ": " fmt
+
 #include <asm/pgtable.h>
 #include <asm/mmu_context.h>
 
@@ -78,7 +81,7 @@ void kexec_idmap_setup(void)
 		if (pgd_val(kexec_idmap_pg_dir[pdx])) {
 			pmd = (void *) phys_to_virt(pgd_val(kexec_idmap_pg_dir[pdx]) & ~0xFFF);
 		} else {
-			pr_info("kexec_mod: Created new idmap page table for 0x%lx\n", pa);
+			pr_info("Created new idmap page table for 0x%lx\n", pa);
 
 			pmd = next_pmd;
 			next_pmd += PTRS_PER_PTE;

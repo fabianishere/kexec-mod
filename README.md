@@ -17,25 +17,22 @@ via `/dev/kexec`.
 `kexec-tools`.
 
 ### Pre-requisites
-Make sure you have installed the following packages:
-
-```bash
-sudo apt install gcc-aarch64-linux-gnu
-```
+Make sure you have installed the necessary packages for building Linux kernel
+modules on your system (e.g., `make` and `gcc`).
 
 ### Kernel module
 Enter the `kernel` directory and export the path to the Linux kernel sources
-against you whish to build:
+against you wish to build:
 
 ```bash
 cd kernel/
-export KERNEL=/root/linux
 ```
 Then, build the module using `make`:
 ```bash
-make
+make KDIR=/path/to/linux
 ```
-This will build `kexec_mod.ko` which can be loaded into the Linux kernel.
+This will build `kexec_mod.ko` and `kexec_mod_$ARCH.ko` which can be loaded
+into the Linux kernel.
 
 ### User-space helper
 Enter the `user` directory and build the helper as follows:

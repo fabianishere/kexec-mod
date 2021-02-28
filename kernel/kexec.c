@@ -1,5 +1,6 @@
 #include "kexec.h"
 
+#include <linux/version.h>
 #include <linux/module.h>
 #undef  module_init
 #define module_init(initfn) __attribute__((unused)) static int initfn(void);
