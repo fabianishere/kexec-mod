@@ -8,4 +8,4 @@ all: redir.so
 	$(CC) $(CFLAGS) -shared -fpic -o $@ $<
 
 clean:
-	rm redir.so
+	rm -f redir.so
