@@ -44,7 +44,7 @@ ENTRY(__cpu_soft_restart)
 	 * in case the hypervisor call returns/fails, for instance,
 	 * when HVC_SOFT_RESTART is not supported by the kernel.
 	 */
-	mov	x18, x1				// entry
+	mov	x8, x1				// entry
 
 	cbz	x0, 1f				// el2_switch?
 	mov	x0, #HVC_SOFT_RESTART
@@ -53,5 +53,5 @@ ENTRY(__cpu_soft_restart)
 1:	mov	x0, x2				// arg0
 	mov	x1, x3				// arg1
 	mov	x2, x4				// arg2
-	br	x18
+	br	x8
 ENDPROC(__cpu_soft_restart)

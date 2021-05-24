@@ -27,7 +27,7 @@
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Fabian Mastenbroek <mail.fabianm@gmail.com>");
 MODULE_DESCRIPTION("Kexec backport as Kernel Module");
-MODULE_VERSION("1.0");
+MODULE_VERSION("1.1");
 
 static ssize_t kexecmod_loaded_show(struct kobject *kobj,
 		  		    struct kobj_attribute *attr, char *buf)

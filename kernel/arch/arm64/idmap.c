@@ -50,24 +50,9 @@
 pgd_t kexec_idmap_pg_dir[PTRS_PER_PGD] __attribute__ ((aligned (4096)));
 pte_t kexec_idmap_pt[2 * PTRS_PER_PTE] __attribute__ ((aligned (4096)));
 
-struct mm_struct init_mm;
-
 extern void __cpu_soft_restart(unsigned el2_switch,
 	unsigned long entry, unsigned long arg0, unsigned long arg1,
 	unsigned long arg2);
-
-static void __init_mm(void)
-{
-	/*
-	 * Hack to obtain pointer to swapper_pg_dir (since it is not exported).
-	 * However, we can find its physical address in the TTBR1_EL1 register
-	 * and convert it to a logical address.
-	 */
-	u32 val;
-	asm volatile("mrs %0, ttbr1_el1" : "=r" (val));
-	init_mm.pgd = phys_to_virt(val);
-
-}
 
 void kexec_idmap_setup(void)
 {
@@ -78,8 +63,6 @@ void kexec_idmap_setup(void)
 			 kexec_idmap_pt,
 			 kexec_idmap_pt + PTRS_PER_PTE,
 			 __cpu_soft_restart};
-
-	__init_mm();
 
 	/* Clear the idmap page table */
 	memset(kexec_idmap_pg_dir, 0, sizeof(kexec_idmap_pg_dir));

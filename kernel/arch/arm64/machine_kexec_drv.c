@@ -20,7 +20,7 @@
 MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Fabian Mastenbroek <mail.fabianm@gmail.com>");
 MODULE_DESCRIPTION("Kexec backport as Kernel Module for ARM64");
-MODULE_VERSION("1.0");
+MODULE_VERSION("1.1");
 
 static int detect_el2 = 1;
 module_param(detect_el2, int, 0);
