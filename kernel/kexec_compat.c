@@ -49,42 +49,6 @@ void cpu_hotplug_enable(void)
 	cpu_hotplug_enable_ptr();
 }
 
-
-/* These kernel symbols are stubbed since they are not available
- * in the host kernel or not actually used for kexec */
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,2,0)
-bool crash_kexec_post_notifiers;
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,5,0)
-atomic_t panic_cpu;
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,11,0)
-void printk_safe_flush_on_panic(void)
-{}
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,7,0)
-void printk_nmi_flush_on_panic(void)
-{}
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0)
-Elf_Word *append_elf_note(Elf_Word *buf, char *name, unsigned int type,
-			              void *data, size_t data_len)
-{
-	return 0;
-}
-
-void final_note(Elf_Word *buf)
-{}
-
-void crash_save_vmcoreinfo(void)
-{}
-
-void crash_update_vmcoreinfo_safecopy(void *ptr)
-{}
-#endif
-
 static void *ksym(const char *name)
 {
 	return (void *)kallsyms_lookup_name(name);

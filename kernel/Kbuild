@@ -10,17 +10,6 @@
 
 obj-m := kexec_mod.o
 obj-m += arch/$(ARCH)/
-kexec_mod-y := kexec_drv.o kexec_compat.o kexec.o
+kexec_mod-y := kexec_drv.o kexec_compat.o kexec.o kexec_core.o
 
 ccflags-y := -I$(src)/ -fno-unwind-tables -fno-asynchronous-unwind-tables
-
-clean-dirs += orig
-
-$(obj)/orig :
-	mkdir -p $@
-
-$(obj)/orig/% : | $(obj)/orig
-	ln -sf $(KDIR)/kernel/$* $@
-
-$(obj)/kexec.c : $(obj)/orig/kexec.c $(obj)/orig/kexec_core.c $(obj)/orig/kexec_internal.h
-

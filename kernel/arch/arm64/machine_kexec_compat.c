@@ -52,31 +52,6 @@ bool cpus_are_stuck_in_kernel(void)
 	return false;
 }
 
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0)
-struct kimage *kexec_crash_image;
-
-bool smp_crash_stop_failed(void)
-{
-	return false;
-}
-
-void crash_save_cpu(struct pt_regs *regs, int cpu)
-{}
-
-int set_memory_valid(unsigned long addr, int numpages, int enable)
-{
-	return 0;
-}
-#endif
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(4,14,0)
-void crash_smp_send_stop(void)
-{}
-#elif LINUX_VERSION_CODE >= KERNEL_VERSION(4,12,0)
-void smp_send_crash_stop(void)
-{}
-#endif
-
 /* These symbols need to be resolved using by extracting their
  * addresses from symbols that are exposed to kernel modules */
 u64 idmap_t0sz = TCR_T0SZ(VA_BITS);
